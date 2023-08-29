@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+</head>
+
+<body>
+  <div class="flex flex-col h-screen fixed top-0 w-full overflow-y-auto">
+    <nav class="flex flex-col bg-gray-100 rounded-b-xl p-2 z-50 relative">
+      <div class="flex justify-between m-1">
+        <div class="flex items-center gap-2">
+          <a href="{% url 'main:main' %}" class="text-2xl font-bold">3DChronicleHub</a>
+        </div>
+      </div>
+
+      <ul class="flex gap-2 bg-gray-200 p-2 rounded-full">
+        <li>
+          <button id="button-add"
+            class="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-center text-white bg-green-500 rounded-full hover:bg-green-700">
+            Загрузить модель
+          </button>
+        </li>
+        <li>
+          <button id="button-save"
+            class="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-center text-white bg-green-500 rounded-full hover:bg-green-700">
+            Сохранить
+          </button>
+        </li>
+        <li>
+          <button id="button-light" 
+          class="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-center text-white bg-green-500 rounded-full hover:bg-green-700">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+            </svg>
+          </button>
+        </li>
+      </ul>
+      <div class="absolute top-full left-0 right-0 bg-gray-100 hidden border-2 border-gray-900 rounded-lg m-1 p-1 z-20 flex items-center justify-center"
+        id="add-model">
+        <form method="post" action="{% url 'main:add_model'%}" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="mb-6">
+            <label class="block mb-2 text-sm font-medium text-gray-900">Название модели</label>
+            <input type="text" name="name" placeholder="Название модели"
+              class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5"
+              autofocus required id="id_username" />
+          </div>
+          <div class="mb-6">
+            <label class="block mb-2 text-sm font-medium text-gray-900">Описание модели</label>
+            <textarea id="textAreaField" name="textareaName" rows="4" cols="50" placeholder="Описание модели"
+              class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5"></textarea>
+          </div>
+
+          <div class="mb-6">
+            <label class="block mb-2 text-sm font-medium text-gray-900">Фото модели</label>
+            <input
+              class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 p-1"
+              type="file" name="photo" />
+          </div>
+
+          <div class="mb-6">
+            <label class="block mb-2 text-sm font-medium text-gray-900">Файл модели</label>
+            <input
+              class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 p-1"
+              type="file" name="file_model" />
+          </div>
+          {% if form.errors or form.non_field_errors %}
+          <div class="mb-3 p-6 bg-red-100 rounded-xl">
+            {% for field in form %} {{ field.errors }} {% endfor %} {{
+            form.non_field_errors }}
+          </div>
+          {% endif %}
+          <button type="submit"
+            class="text-white bg-green-500 hover:bg-green-800 font-medium rounded-full text-sm px-5 py-2.5 text-center">
+            Сохранить
+          </button>
+        </form>
+      </div>  
+    </nav>
+    <main class="flex-1">
+      <div class="relative">
+        <div class="absolute top-0 left-0 z-10 flex flex-col md:flex-row gap-5">
+          <div class="flex" id="gui-light-container"></div>
+          <div class="flex" id="gui-element-container"></div>
+      </div>
+      </div>
+      <canvas class="rounded-lg h-full w-full" id="main_canvas"></canvas>
+    </main>
+  </div>
+  <script>
+    const btnAdd = document.getElementById("button-add");
+    const formAdd = document.getElementById("add-model");
+    btnAdd.addEventListener("click", () => {
+      formAdd.classList.toggle("hidden");
+    });
+  </script>
+  <script>
+    const path_model = 'public/InteriorTest.obj'
+    dataJson = {
+    "lights": [
+        {
+            "metadata": {
+                "version": 4.6,
+                "type": "Object",
+                "generator": "Object3D.toJSON"
+            },
+            "object": {
+                "uuid": "98522e0f-0bd2-476f-8f20-fb675e7c5f27",
+                "type": "PointLight",
+                "layers": 1,
+                "matrix": [
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0.4037831899996176,
+                    -1.3924376788071093,
+                    -0.4073739743902749,
+                    1
+                ],
+                "up": [
+                    0,
+                    1,
+                    0
+                ],
+                "color": 16777215,
+                "intensity": 1,
+                "distance": 10,
+                "decay": 2,
+                "shadow": {
+                    "camera": {
+                        "uuid": "ed0b54b6-1645-4f1a-a34d-8a7db6c3fbbc",
+                        "type": "PerspectiveCamera",
+                        "layers": 1,
+                        "up": [
+                            0,
+                            1,
+                            0
+                        ],
+                        "fov": 90,
+                        "zoom": 1,
+                        "near": 0.5,
+                        "far": 500,
+                        "focus": 10,
+                        "aspect": 1,
+                        "filmGauge": 35,
+                        "filmOffset": 0
+                    }
+                }
+            }
+        },
+        {
+            "metadata": {
+                "version": 4.6,
+                "type": "Object",
+                "generator": "Object3D.toJSON"
+            },
+            "object": {
+                "uuid": "1954d977-0c0c-4d5d-b08c-22121aca3c42",
+                "type": "PointLight",
+                "layers": 1,
+                "matrix": [
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    1.426314682804187,
+                    -0.6260278907178289,
+                    -1.2993170610848548,
+                    1
+                ],
+                "up": [
+                    0,
+                    1,
+                    0
+                ],
+                "color": 16777215,
+                "intensity": 1,
+                "distance": 10,
+                "decay": 2,
+                "shadow": {
+                    "camera": {
+                        "uuid": "c6067233-3f6c-476e-b69f-6ee6b4e656d2",
+                        "type": "PerspectiveCamera",
+                        "layers": 1,
+                        "up": [
+                            0,
+                            1,
+                            0
+                        ],
+                        "fov": 90,
+                        "zoom": 1,
+                        "near": 0.5,
+                        "far": 500,
+                        "focus": 10,
+                        "aspect": 1,
+                        "filmGauge": 35,
+                        "filmOffset": 0
+                    }
+                }
+            }
+        }
+    ],
+    "elements": [
+        {
+            "metadata": {
+                "version": 4.6,
+                "type": "Object",
+                "generator": "Object3D.toJSON"
+            },
+            "geometries": [
+                {
+                    "uuid": "4a3f04f2-b3ff-49a5-ae0a-0f002f8ab4b2",
+                    "type": "SphereGeometry",
+                    "radius": 0.5,
+                    "widthSegments": 32,
+                    "heightSegments": 32,
+                    "phiStart": 0,
+                    "phiLength": 6.283185307179586,
+                    "thetaStart": 0,
+                    "thetaLength": 3.141592653589793
+                }
+            ],
+            "materials": [
+                {
+                    "uuid": "f4b831c8-b763-4492-b97e-98c491cc9f1e",
+                    "type": "MeshStandardMaterial",
+                    "color": 65280,
+                    "roughness": 1,
+                    "metalness": 0,
+                    "emissive": 0,
+                    "envMapIntensity": 1,
+                    "depthFunc": 3,
+                    "depthTest": true,
+                    "depthWrite": true,
+                    "colorWrite": true,
+                    "stencilWrite": false,
+                    "stencilWriteMask": 255,
+                    "stencilFunc": 519,
+                    "stencilRef": 0,
+                    "stencilFuncMask": 255,
+                    "stencilFail": 7680,
+                    "stencilZFail": 7680,
+                    "stencilZPass": 7680
+                }
+            ],
+            "object": {
+                "uuid": "670a66ee-b87f-442c-9ee9-da4d1f4d59f1",
+                "type": "Mesh",
+                "userData": {
+                    "message": "retr",
+                    "url": "ret"
+                },
+                "layers": 1,
+                "matrix": [
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    -0.7478087875662904,
+                    1.4147748478423745,
+                    0.21058608558241243,
+                    1
+                ],
+                "up": [
+                    0,
+                    1,
+                    0
+                ],
+                "geometry": "4a3f04f2-b3ff-49a5-ae0a-0f002f8ab4b2",
+                "material": "f4b831c8-b763-4492-b97e-98c491cc9f1e"
+            }
+        },
+        {
+            "metadata": {
+                "version": 4.6,
+                "type": "Object",
+                "generator": "Object3D.toJSON"
+            },
+            "geometries": [
+                {
+                    "uuid": "54e70693-b199-40da-a415-c99ba5f19492",
+                    "type": "SphereGeometry",
+                    "radius": 0.5,
+                    "widthSegments": 32,
+                    "heightSegments": 32,
+                    "phiStart": 0,
+                    "phiLength": 6.283185307179586,
+                    "thetaStart": 0,
+                    "thetaLength": 3.141592653589793
+                }
+            ],
+            "materials": [
+                {
+                    "uuid": "64ce293b-cb25-4f4c-9b11-5bd9775fd22e",
+                    "type": "MeshStandardMaterial",
+                    "color": 65280,
+                    "roughness": 1,
+                    "metalness": 0,
+                    "emissive": 0,
+                    "envMapIntensity": 1,
+                    "depthFunc": 3,
+                    "depthTest": true,
+                    "depthWrite": true,
+                    "colorWrite": true,
+                    "stencilWrite": false,
+                    "stencilWriteMask": 255,
+                    "stencilFunc": 519,
+                    "stencilRef": 0,
+                    "stencilFuncMask": 255,
+                    "stencilFail": 7680,
+                    "stencilZFail": 7680,
+                    "stencilZPass": 7680
+                }
+            ],
+            "object": {
+                "uuid": "32a7226e-85f6-4b02-a587-75bf0037313d",
+                "type": "Mesh",
+                "userData": {
+                    "message": "ertre",
+                    "url": "retre"
+                },
+                "layers": 1,
+                "matrix": [
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    -1.1257283931429694,
+                    -0.4,
+                    0.2570309911964479,
+                    1
+                ],
+                "up": [
+                    0,
+                    1,
+                    0
+                ],
+                "geometry": "54e70693-b199-40da-a415-c99ba5f19492",
+                "material": "64ce293b-cb25-4f4c-9b11-5bd9775fd22e"
+            }
+        }
+    ]
+}
+  </script>
+
+
+  <script type="module" src="/main.js"></script>
+</body>
+</html>
