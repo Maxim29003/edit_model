@@ -60,8 +60,8 @@ if (dataJson){
         light.object.matrix[12], 
         light.object.matrix[13], 
         light.object.matrix[14], 
-        light.intensity, 
-        light.distance
+        light.object.intensity, 
+        light.object.distance
         )
       createMenuForLight(newLight.light, newLight.control)
     }
