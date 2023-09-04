@@ -14,136 +14,135 @@ const guiElement = new dat.GUI();
 const canvas = document.getElementById('main_canvas')
 
 const mainLight = new THREE.PointLight(0xffffff, 1000);
-mainLight.position.set(20, 20, 20); 
+mainLight.position.set(20, 20, 20);
 
 let isMainLight = false
 
 init()
 animate()
 
-function  init () {
+function init() {
   // Создание сцены
-scene = new THREE.Scene();
-scene.background = new THREE.Color(0xffffff)
-scene.fog = new THREE.Fog(0xffffff, 0, 500)
-scene.add(new THREE.GridHelper(1000, 1000))
-// Создание камеры
-camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
-camera.position.z = 10;
-camera.position.x = 10;
-camera.position.y = 10;
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xffffff)
+  scene.fog = new THREE.Fog(0xffffff, 0, 500)
+  scene.add(new THREE.GridHelper(1000, 1000))
+  // Создание камеры
+  camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+  camera.position.z = 10;
+  camera.position.x = 10;
+  camera.position.y = 10;
 
-// Создание рендерера
-renderer = new THREE.WebGLRenderer({antialias: true, canvas});
-renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-renderer.setPixelRatio(window.devicePixelRatio)
+  // Создание рендерера
+  renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
+  renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+  renderer.setPixelRatio(window.devicePixelRatio)
 
-orbitControls = new OrbitControls(camera, canvas)
+  orbitControls = new OrbitControls(camera, canvas)
 
-// Создание меню
-const guiLightContainer = document.getElementById("gui-light-container");
-const guiElementContainer = document.getElementById("gui-element-container");
+  // Создание меню
+  const guiLightContainer = document.getElementById("gui-light-container");
+  const guiElementContainer = document.getElementById("gui-element-container");
 
-guiLightContainer.appendChild(guiLight.domElement);
-guiElementContainer.appendChild(guiElement.domElement);
+  guiLightContainer.appendChild(guiLight.domElement);
+  guiElementContainer.appendChild(guiElement.domElement);
 
-guiLight.add({ 'Add Light': addLight }, 'Add Light');
-guiElement.add({ 'Add Element': addElement }, 'Add Element');
+  guiLight.add({ 'Add Light': addLight }, 'Add Light');
+  guiElement.add({ 'Add Element': addElement }, 'Add Element');
 
 
-// Загрузка элементов и света если они есть 
-if (dataJson){
-  if (dataJson.lights){
-    for (const light of dataJson.lights) {
-      const newLight = createLight(
-        light.color, 
-        light.object.matrix[12], 
-        light.object.matrix[13], 
-        light.object.matrix[14], 
-        light.object.intensity, 
-        light.object.distance
+
+  if (dataJson) {
+    if (dataJson.lights) {
+      for (const light of dataJson.lights) {
+        createLight(
+          light.color,
+          light.object.matrix[12],
+          light.object.matrix[13],
+          light.object.matrix[14],
+          light.object.intensity,
+          light.object.distance
         )
-      createMenuForLight(newLight.light, newLight.control)
+      }
+    }
+
+    if (dataJson.elements) {
+      for (const element of dataJson.elements) {
+        createElement(
+          element.materials[0].color,
+          element.object.matrix[12],
+          element.object.matrix[13],
+          element.object.matrix[14],
+          element.geometries[0].radius,
+          element.object.userData
+        )
+      }
+
     }
   }
- 
-  if (dataJson.elements){
-    for (const element of dataJson.elements) {
-      const newElement = createElement(
-        element.materials[0].color,
-        element.object.matrix[12], 
-        element.object.matrix[13], 
-        element.object.matrix[14],
-        element.geometries[0].radius,
-        element.object.userData
-        )
-        createMenuForElement(newElement.element, newElement.control)
-    }
-    
-  }
-}
 
-// загрузка модели obj
-if (path_model){
-  const loader = new OBJLoader();
 
-loader.load(
-  path_model,
-  (object) => {
-    scene.add(object)
-  },
-  (xhr) => {
-    console.log((xhr.loaded / xhr.total * 100) + '% загружено');
-  },
-  (error) => {
-    console.error('Ошибка загрузки модели', error);
+  // загрузка модели obj
+  if (path_model) {
+    const loader = new OBJLoader();
+
+    loader.load(
+      path_model,
+      (object) => {
+        scene.add(object)
+      },
+      (xhr) => {
+        console.log((xhr.loaded / xhr.total * 100) + '% загружено');
+      },
+      (error) => {
+        console.error('Ошибка загрузки модели', error);
+      }
+    );
   }
-);
-}
-scene.add(mainLight)
+  scene.add(mainLight)
 }
 
 // Создание элемента 
-function createElement(color, x, y, z, radius, textData=null){
-  const elementGeometry = new THREE.SphereGeometry(radius, 32, 32); 
+function createElement(color, x, y, z, radius, textData = null) {
+  const elementGeometry = new THREE.SphereGeometry(radius, 32, 32);
   const elementMaterial = new THREE.MeshStandardMaterial({ color: color });
   const element = new THREE.Mesh(elementGeometry, elementMaterial);
-  if (textData){
+  if (textData) {
     element.userData = textData
   }
   element.position.set(x, y, z);
   scene.add(element);
 
-  const control = new TransformControls( camera, canvas );
-	
-  control.addEventListener( 'dragging-changed', function ( event ) {
-    orbitControls.enabled = ! event.value;
-  } );
+  const control = new TransformControls(camera, canvas);
+
+  control.addEventListener('dragging-changed', function (event) {
+    orbitControls.enabled = !event.value;
+  });
 
   control.attach(element)
   scene.add(control)
-  return {element, control}
+  return { element, control }
 }
 
 // Создание Света
-function createLight(color, x, y, z, intensity, distance){
+function createLight(color, x, y, z, intensity, distance) {
   const light = new THREE.PointLight(color, intensity, distance);
   light.position.set(x, y, z);
   scene.add(light);
- 
-  const control = new TransformControls( camera, canvas );
-	
-  control.addEventListener( 'dragging-changed', function ( event ) {
-    orbitControls.enabled = ! event.value;
-  } );
+
+  const control = new TransformControls(camera, canvas);
+
+  control.addEventListener('dragging-changed', function (event) {
+    orbitControls.enabled = !event.value;
+  });
 
   control.attach(light)
   scene.add(control)
-  return {light , control}
+  return { light, control }
 }
 
 
-function createMenuForElement(element, control){
+function createMenuForElement(element, control) {
   const elementFolder = guiElement.addFolder(`Element ${elements.length}`);
   elementFolder.add(element.position, 'x', -2, 2).step(0.1).name('Position X');
   elementFolder.add(element.position, 'y', -2, 2).step(0.1).name('Position Y');
@@ -157,18 +156,18 @@ function createMenuForElement(element, control){
   if (!textData.url) {
     textData.url = ''
   }
- 
+
   elementFolder.add(textData, "message").name("Text Message");
   elementFolder.add(textData, "url").name("Url");
   elementFolder.addColor(element.material, 'color').name('Color');
 
   element.userData = textData
-  elementFolder.add({ Remove: () => remove(element, control, elementFolder, guiElement ) }, 'Remove').name('Remove');
+  elementFolder.add({ Remove: () => remove(element, control, elementFolder, guiElement) }, 'Remove').name('Remove');
   elements.push(element);
 }
 
 
-function createMenuForLight(light, control){
+function createMenuForLight(light, control) {
   const lightFolder = guiLight.addFolder(`Light ${lights.length} `);
   lightFolder.add(light.position, 'x', -2, 2).step(0.1).name('Position X');
   lightFolder.add(light.position, 'y', -2, 2).step(0.1).name('Position Y');
@@ -188,9 +187,9 @@ function remove(object, control, folder, gui) {
   scene.remove(control);
   control.dispose();
   scene.remove(object);
-  if (lights.includes(object)){
+  if (lights.includes(object)) {
     lights.splice(lights.indexOf(object), 1);
-  }else{
+  } else {
     elements.splice(elements.indexOf(object), 1);
   }
   gui.removeFolder(folder)
@@ -202,37 +201,41 @@ function addLight() {
   createMenuForLight(addNewLight.light, addNewLight.control)
 }
 
-function createJSON(){
+function createJSON() {
   const json = {
     'lights': lights,
-    'elements':elements,
+    'elements': elements,
   };
   return json;
 }
 
-// кнопка сохранить 
 const buttonSave = document.getElementById('button-save')
 buttonSave.onclick = () => {
-  console.log('save')
-  const res = createJSON()
-  console.log(res)
+    console.log(JSON.stringify(createJSON()))
 }
-
 // кнопка света 
 const buttonLight = document.getElementById('button-light')
 buttonLight.onclick = () => {
-  if (!isMainLight){
+  if (!isMainLight) {
     scene.remove(mainLight)
     isMainLight = true
-  }else{
+  } else {
     scene.add(mainLight)
     isMainLight = false
   }
 }
 
+function resizeWindow(){
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+window.addEventListener('resize', resizeWindow);
+
 function animate() {
-    requestAnimationFrame(animate);
-    orbitControls.update()
-    renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+  orbitControls.update()
+  renderer.render(scene, camera);
 };
 
